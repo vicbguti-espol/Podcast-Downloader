@@ -14,7 +14,7 @@ def parse_date(date):
 
 def get_mp3_file(url):
 	# It redirects the url before you get the actual file
-	redirect_url = requests.get(url).url 
+	redirect_url = requests.get(url).url
 	file = requests.get(redirect_url)
 	return file
 
@@ -24,22 +24,25 @@ def save_mp3_file(file, file_path):
 
 def simplify_title(title):
 	file_name = re.sub(r'[%/&!@#\*\$\?\+\^\\.\\\\]', '', title)[:100]
+	# file_name = title.replace('/','-').replace('\\\\','-').replace('.',' ')[:100]
 	return file_name
-	#file_name = title.replace('/','-').replace('\\\\','-').replace('.',' ')[:100]
-
 
 if __name__ == '__main__':
 	print("\n--- Downloading podcasts... ---\n")
-	podcast_list = [Podcast('lex-fridman', 'https://lexfridman.com/feed/podcast/')]
+	podcast_list = [Podcast('psi-mammoliti', 'https://anchor.fm/s/28fef6f0/podcast/rss')]
 
 	for podcast in podcast_list:
-		podcast_items = podcast.search_items('robot', limit=5)
+		podcast_items = podcast.search_items('Me sentí demasiado cansado, quisiera que no me vuelva a pasar', limit=2)
+		# podcast_items = podcast.get_items()[:5]
 		episodes_metadata = get_episodes_metadata(podcast_items)
+		i = 1 ## 
 		for episode in episodes_metadata:
 			url, title, release_date = episode
 			simple_title = simplify_title(title)
 			file = get_mp3_file(url)
 			# file_path = f'{podcast.download_directory}/{release_date}.mp3'
-			file_path = f'{podcast.download_directory}/{simple_title}.mp3'
+			# file_path = f'{podcast.download_directory}/{simple_title}.mp3'
+			file_path = f'{podcast.download_directory}/E{i}.mp3' ## 
 			save_mp3_file(file, file_path)
 			print(file_path, "saved")
+			i += 1

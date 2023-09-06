@@ -4,6 +4,10 @@ import time
 import requests
 from podcast import Podcast
 
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
+
 def create_transcripts(podcast_list, **kwargs):
 	all_transcription_metadata = {}
 	for podcast in podcast_list:
@@ -21,7 +25,8 @@ def create_transcripts(podcast_list, **kwargs):
 	return all_transcription_metadata
 
 def upload_to_assembly_ai(file_path):
-	headers = {'authorization': os.environ['ASSEMBLY_AI_KEY']}
+	# headers = {'authorization': os.environ['ASSEMBLY_AI_KEY']}
+	headers = {'authorization': os.getenv('ASSEMBLY_AI_KEY')}
 	endpoint = 'https://api.assemblyai.com/v2/upload'
 	response = requests.post(endpoint, headers=headers, data=read_file(file_path))
 	upload_url = response.json()['upload_url']
@@ -29,14 +34,16 @@ def upload_to_assembly_ai(file_path):
 
 def transcribe_podcast(url, **kwargs):
 	headers = {
-	    "authorization": os.environ['ASSEMBLY_AI_KEY'],
-	    "content-type": "application/json"
+	    # "authorization": os.environ['ASSEMBLY_AI_KEY'],
+		"authorization": os.getenv('ASSEMBLY_AI_KEY'),
+	    "content-type": "application/json",
 	}
 	
 	json = {'audio_url': url}
 	for key, value in kwargs.items():
 		json[key] = value
-	
+
+	print(json)
 	endpoint = 'https://api.assemblyai.com/v2/transcript'
 	response = requests.post(endpoint, headers=headers, json=json)
 	transcription_id = response.json()['id']
@@ -88,16 +95,19 @@ def wait_and_get_assembly_ai_transcript(transcription_id):
 			print("Error getting transcript")
 			break
 		else:
-			print("Transcript not available, trying again in 5 minutes...")
-			time.sleep(300) # Try again in 5 minutes
+			# print("Transcript not available, trying again in 5 minutes...")
+			# time.sleep(300) # Try again in 5 minutes
+			print("Transcript not available, trying again in 10 seconds...")
+			time.sleep(10) # Try again in 10 seconds
 
 	return response
 
 if __name__ == '__main__':
 	print("\n--- Transcribing podcasts... ---\n")
 	#podcast_list = [Podcast('tim-ferriss', 'https://rss.art19.com/tim-ferriss-show')]
-	podcast_list = [Podcast('lex-fridman', 'https://lexfridman.com/feed/podcast/')]
-	metadata = create_transcripts(podcast_list, audio_start_from=600000, audio_end_at=900000)
+	# podcast_list = [Podcast('lex-fridman', 'https://lexfridman.com/feed/podcast/')]
+	podcast_list = [Podcast('psi-mammoliti', 'https://anchor.fm/s/28fef6f0/podcast/rss')]
+	metadata = create_transcripts(podcast_list, audio_start_from=600000, audio_end_at=900000, language_code="es")
 	print('Uploaded transcripts')
 	save_transcription_metadata(metadata)
 	save_transcriptions_locally(podcast_list)
