@@ -25,7 +25,6 @@ def create_transcripts(podcast_list, **kwargs):
 	return all_transcription_metadata
 
 def upload_to_assembly_ai(file_path):
-	# headers = {'authorization': os.environ['ASSEMBLY_AI_KEY']}
 	headers = {'authorization': os.getenv('ASSEMBLY_AI_KEY')}
 	endpoint = 'https://api.assemblyai.com/v2/upload'
 	response = requests.post(endpoint, headers=headers, data=read_file(file_path))
@@ -34,7 +33,6 @@ def upload_to_assembly_ai(file_path):
 
 def transcribe_podcast(url, **kwargs):
 	headers = {
-	    # "authorization": os.environ['ASSEMBLY_AI_KEY'],
 		"authorization": os.getenv('ASSEMBLY_AI_KEY'),
 	    "content-type": "application/json",
 	}
@@ -67,40 +65,75 @@ def load_transcription_metadata(file_path='./transcripts/metadata.json'):
 
 	return metadata
 
+# def save_transcriptions_locally(podcast_list):
+# 	metadata = load_transcription_metadata()
+# 	for podcast in podcast_list:
+# 		podcast_transcriptions = metadata[podcast.name]
+# 		for episode, transcription_id in podcast_transcriptions.items():
+# 			episode_name = os.path.splitext(episode)[0]
+# 			output_path = f'{podcast.transcription_directory}/{episode_name}.txt'
+# 			print('Trying to save', output_path)
+# 			transcription = wait_and_get_assembly_ai_transcript(transcription_id)
+# 			with open(output_path, 'w') as f:
+# 				f.write(transcription['text'])
+
+
 def save_transcriptions_locally(podcast_list):
 	metadata = load_transcription_metadata()
 	for podcast in podcast_list:
 		podcast_transcriptions = metadata[podcast.name]
 		for episode, transcription_id in podcast_transcriptions.items():
 			episode_name = os.path.splitext(episode)[0]
-			output_path = f'{podcast.transcription_directory}/{episode_name}.txt'
+			output_path = f'{podcast.transcription_directory}/{episode_name}.json'
 			print('Trying to save', output_path)
-			transcription = wait_and_get_assembly_ai_transcript(transcription_id)
+			paragraphs = wait_and_get_assembly_ai_transcript(transcription_id)
 			with open(output_path, 'w') as f:
-				f.write(transcription['text'])
+				json.dump(paragraphs, f)
+				
+# def get_assembly_ai_transcript(transcription_id):
+# 	headers = {'authorization': os.environ['ASSEMBLY_AI_KEY']}
+# 	endpoint = f'https://api.assemblyai.com/v2/transcript/{transcription_id}'
+# 	response = requests.get(endpoint, headers=headers)
+# 	return response.json()
 
 def get_assembly_ai_transcript(transcription_id):
 	headers = {'authorization': os.environ['ASSEMBLY_AI_KEY']}
-	endpoint = f'https://api.assemblyai.com/v2/transcript/{transcription_id}'
+	endpoint = f'https://api.assemblyai.com/v2/transcript/{transcription_id}/paragraphs'
 	response = requests.get(endpoint, headers=headers)
-	return response.json()
+	return response
+
+# def wait_and_get_assembly_ai_transcript(transcription_id):
+# 	while True:
+# 		response = get_assembly_ai_transcript(transcription_id)
+# 		if response['status'] == 'completed':
+# 			print("Got transcript")
+# 			break
+# 		elif response['status'] == 'error':
+# 			print("Error getting transcript")
+# 			break
+# 		else:
+# 			# print("Transcript not available, trying again in 5 minutes...")
+# 			# time.sleep(300) # Try again in 5 minutes
+# 			print("Transcript not available, trying again in 10 seconds...")
+# 			time.sleep(10) # Try again in 10 seconds
+
+# 	return response
 
 def wait_and_get_assembly_ai_transcript(transcription_id):
 	while True:
 		response = get_assembly_ai_transcript(transcription_id)
-		if response['status'] == 'completed':
+		if response.status_code == 200:
 			print("Got transcript")
 			break
-		elif response['status'] == 'error':
+		elif response.status_code == 404:
 			print("Error getting transcript")
 			break
 		else:
-			# print("Transcript not available, trying again in 5 minutes...")
-			# time.sleep(300) # Try again in 5 minutes
 			print("Transcript not available, trying again in 10 seconds...")
 			time.sleep(10) # Try again in 10 seconds
 
-	return response
+	return response.json()
+
 
 if __name__ == '__main__':
 	print("\n--- Transcribing podcasts... ---\n")

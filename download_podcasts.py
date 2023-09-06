@@ -26,7 +26,6 @@ def save_mp3_file(file, file_path):
 
 def simplify_title(title):
     file_name = re.sub(r'[%/&!@#\*\$\?\+\^\\.\\\\]', '', title)[:100].replace(' ', '-')
-    # file_name = title.replace('/','-').replace('\\\\','-').replace('.',' ')[:100]
     return file_name
 
 def save_download_metadata(metadata, file_path='./download_metadata.json'):
