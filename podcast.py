@@ -48,63 +48,47 @@ class Podcast:
     
     def cosine_similarity(self, a, b):
         return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    
+    def simplify_title(self):
+        file_name = re.sub(r'[%/&!@#\*\$\?\+\^\\.\\\\]', '', self.name)[:100].replace(' ', '-')
+        return file_name
         
     def get_items_embeddings(self, last_items):
-        # items_embeddings = []
         items_embeddings = {}
-        # items_embeddings_path = f'{self.download_directory}/{self.name}.pickle'
-        ITEMS_EMB_PATH = f'./items_embeddings/{self.name}.json'
-        if not os.path.exists(ITEMS_EMB_PATH): 
+        ITEMS_EMB_PATH = f'./items_embeddings'
+        JSON_PATH = f'{ITEMS_EMB_PATH}/{self.simplify_title()}.json'
+
+        if not os.path.exists(ITEMS_EMB_PATH):
+            os.mkdir(ITEMS_EMB_PATH)
+
+        if not os.path.exists(JSON_PATH): 
             items = self.get_items()[:last_items]
             i = 0
             for podcast in items:
-                
-                item_embedding = {}
                 if (i % 10 == 0):
                     time.sleep(8)
                 description = podcast.find('description').text
                 soup = BeautifulSoup(description, 'html.parser')
                 description = "\n".join([p.get_text(strip=True) for p in soup.find_all('p')])
                 description_embedding = self.get_embedding(description)
-                # items_embeddings.append((podcast, description_embedding))
-                # items_embeddings[f'E{i}'] = {'title': podcast.find('title').text,
-                #                               'podcast': podcast, 
-                #                               'embedding': description_embedding}
                 
                 items_embeddings[f'E{i}'] = {'title': podcast.find('title').text,
                                               'embedding': description_embedding}
                 i += 1          
 
-            # Serializar items_embeddings
-            # with open(items_embeddings_path, 'wb') as f:
-            #     pickle.dump(items_embeddings, f)
-
-            with open(ITEMS_EMB_PATH, 'w') as f:
+            with open(JSON_PATH, 'w') as f:
                 json.dump(items_embeddings, f)
         else:
-            # with open(items_embeddings_path, 'rb') as f:
-            #     items_embeddings = pickle.load(f)
 
-            with open(ITEMS_EMB_PATH, 'r') as f:
+            with open(JSON_PATH, 'r') as f:
                items_embeddings = json.load(f) 
         
         return items_embeddings
 
     def search_items(self, search, limit=2, last_items=10):
-        # items_embeddings = []
         items = self.get_items()
         search_embedding = self.get_embedding(search)
         items_embeddings = self.get_items_embeddings(last_items)
-        # for podcast in items:
-        #     description = podcast.find('description').text
-        #     soup = BeautifulSoup(description, 'html.parser')
-        #     description = "\n".join([p.get_text(strip=True) for p in soup.find_all('p')])
-        #     description_embedding = self.get_embedding(description)
-        #     items_embeddings.append((podcast, description_embedding))
-        
-        # items_embeddings.sort(key=lambda x: self.cosine_similarity(x[1], search_embedding))
-
-        # matched_podcasts = [item[0] for item in items_embeddings[:limit]]
 
         sorted_items = sorted(items_embeddings.values(),
                                    key=lambda item: self.cosine_similarity(item['embedding'],
@@ -117,8 +101,7 @@ class Podcast:
             ind_podcast = items_titles.index(item['title'])
             podcast = items[ind_podcast]
             matched_podcasts.append(podcast)
-            
-        # matched_podcasts = [sorted_item['podcast'] for sorted_item in sorted_items[:limit]]
+
         return matched_podcasts
 
 
