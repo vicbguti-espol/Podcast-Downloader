@@ -23,7 +23,7 @@ def save_mp3_file(file, file_path):
         f.write(file.content)
 
 def simplify_title(title):
-	file_name = re.sub(r'[%/&!@#\*\$\?\+\^\\.\\\\]', '', title)[:100]
+	file_name = re.sub(r'[%/&!@#\*\$\?\+\^\\.\\\\]', '', title)[:100].replace(' ', '-')
 	# file_name = title.replace('/','-').replace('\\\\','-').replace('.',' ')[:100]
 	return file_name
 
@@ -41,8 +41,8 @@ if __name__ == '__main__':
 			simple_title = simplify_title(title)
 			file = get_mp3_file(url)
 			# file_path = f'{podcast.download_directory}/{release_date}.mp3'
-			# file_path = f'{podcast.download_directory}/{simple_title}.mp3'
-			file_path = f'{podcast.download_directory}/E{i}.mp3' ## 
+			file_path = f'{podcast.download_directory}/{simple_title}.mp3'
+			# file_path = f'{podcast.download_directory}/E{i}.mp3' ## 
 			save_mp3_file(file, file_path)
 			print(file_path, "saved")
 			i += 1
