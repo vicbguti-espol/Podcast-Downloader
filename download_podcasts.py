@@ -3,6 +3,8 @@ import dateutil.parser
 import requests
 import re
 import json
+import os
+
 
 def get_episodes_metadata(podcast_items):
     episode_urls = [podcast.find('enclosure')['url'] for podcast in podcast_items]
@@ -28,10 +30,6 @@ def simplify_title(title):
     file_name = re.sub(r'[%/&!@#\*\$\?\+\^\\.\\\\]', '', title)[:100].replace(' ', '-')
     return file_name
 
-# def save_download_metadata(metadata, file_path='./download_metadata.json'):
-#     with open(file_path,'w') as f:
-#         json.dump(metadata, f)
-
 def get_podcast_list(raw_podcast_list):
     podcast_list = []
 
@@ -48,25 +46,31 @@ def load_json(file_path):
 
 if __name__ == '__main__':
     print("\n--- Downloading podcasts... ---\n")
-    raw_podcast_list = load_json('./podcast_list.json')['podcast_list']
+
+    # Obtener el podcast_list
+    base_dir = './Podcast-Downloader'
+    podcast_list_dir = f'{base_dir}/podcast_list.json'
+
+    raw_podcast_list = load_json(podcast_list_dir)['podcast_list']
     podcast_list = get_podcast_list(raw_podcast_list)
     
     search = 'Me sentí demasiado cansado, quisiera que no me vuelva a pasar'
-    download_metadata = {}
     for podcast in podcast_list:
-        podcast_items = podcast.search_items(search, limit=2)
+        podcast_items = podcast.search_items(search, top_limit=2)
         episodes_metadata = get_episodes_metadata(podcast_items)
         for episode in episodes_metadata:
+            # Obtener el file_path del episodio en mp3
             url, title, release_date, description = episode
             simple_title = simplify_title(title)
-            file = get_mp3_file(url)
             file_path = f'{podcast.download_directory}/{simple_title}.mp3'
-            
-            if (podcast.name not in download_metadata):
-                download_metadata[podcast.name] = {f'{title}': description}
-            else:
-                download_metadata[podcast.name][f'{title}'] = description
-            
+
+            file = get_mp3_file(url)
             save_mp3_file(file, file_path)
             print(file_path, "saved")
-    # save_download_metadata(download_metadata)
+
+            
+            
+
+
+            
+            

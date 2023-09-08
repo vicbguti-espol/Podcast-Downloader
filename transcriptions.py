@@ -56,7 +56,7 @@ def read_file(filename, chunk_size=5242880):
                 break
             yield data
 
-def save_transcription_metadata(metadata, file_path='./transcripts/metadata.json'):
+def save_transcription_metadata(metadata, file_path='./Podcast-Downloader/transcripts/metadata.json'):
 	with open(file_path,'w') as f:
 		json.dump(metadata, f)
 
@@ -67,7 +67,7 @@ def load_json(file_path):
 
 def save_transcriptions_locally(podcast_list):
 	# Load transcription metadata
-	metadata = load_json('./transcripts/metadata.json')
+	metadata = load_json('./Podcast-Downloader/transcripts/metadata.json')
 	for podcast in podcast_list:
 		podcast_transcriptions = metadata[podcast.name]
 		for episode, transcription_id in podcast_transcriptions.items():
@@ -110,9 +110,12 @@ def wait_and_get_assembly_ai_transcript(transcription_id):
 
 if __name__ == '__main__':
 	print("\n--- Transcribing podcasts... ---\n")
-	# Obtener entradas del usuario
-	# podcast_list = [Podcast('psi-mammoliti', 'https://anchor.fm/s/28fef6f0/podcast/rss')]
-	raw_podcast_list = load_json('./podcast_list.json')['podcast_list']
+
+	# Obtener el podcast_list
+	base_dir = './Podcast-Downloader'
+	podcast_list_dir = f'{base_dir}/podcast_list.json'
+	
+	raw_podcast_list = load_json(podcast_list_dir)['podcast_list']
 	podcast_list = get_podcast_list(raw_podcast_list)
 
 	metadata = create_transcripts(podcast_list, audio_start_from=600000, audio_end_at=900000, language_code="es")

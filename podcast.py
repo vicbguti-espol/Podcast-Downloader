@@ -2,13 +2,12 @@ import requests
 import os
 import re
 from bs4 import BeautifulSoup
-import dateutil.parser
 import openai
 import numpy as np
 from dotenv import load_dotenv, find_dotenv
-import pickle
 import time
 import json
+import unicodedata
 
 load_dotenv(find_dotenv())
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -19,15 +18,16 @@ class Podcast:
         self.name = name
         self.rss_feed_url = rss_feed_url
         
-        self.download_directory = f'./downloads/{name}'
+        
+        self.download_directory = f'./Podcast-Downloader/downloads/{self.slugify(name)}'
         if not os.path.exists(self.download_directory):
             os.makedirs(self.download_directory)
 
-        self.transcription_directory = f'./transcripts/{name}'
+        self.transcription_directory = f'./Podcast-Downloader/transcripts/{self.slugify(name)}'
         if not os.path.exists(self.transcription_directory):
             os.makedirs(self.transcription_directory)   
 
-        self.description_embeddings_path = f'./description_embeddings/{self.simplify_title()}.json'
+        self.description_embeddings_path = f'./Podcast-Downloader/description_embeddings/{self.slugify(name)}.json'
            
 
     def get_items(self):
@@ -43,8 +43,24 @@ class Podcast:
         return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
     
     def simplify_title(self):
-        file_name = re.sub(r'[%/&!@#\*\$\?\+\^\\.\\\\]', '', self.name)[:100].replace(' ', '-')
+        file_name = re.sub(r'[%/&!@#\*\$\?\+\^\\.\\\\]', '', self.name)[:100].replace(' ', '_')
         return file_name
+    
+    def slugify(self, value, allow_unicode=False):
+        """
+        Taken from https://github.com/django/django/blob/master/django/utils/text.py
+        Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
+        dashes to single dashes. Remove characters that aren't alphanumerics,
+        underscores, or hyphens. Convert to lowercase. Also strip leading and
+        trailing whitespace, dashes, and underscores.
+        """
+        value = str(value)
+        if allow_unicode:
+            value = unicodedata.normalize('NFKC', value)
+        else:
+            value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+        value = re.sub(r'[^\w\s-]', '', value.lower())
+        return re.sub(r'[-\s]+', '-', value).strip('-_')
 
     def save_description_embeddings(self, description_embeddings):
         description_embeddings_json = {'description_embeddings':description_embeddings}
@@ -82,7 +98,7 @@ class Podcast:
         description_embeddings = None
 
         # Declarar el archivo de embeddings de las descripciones de los episodios
-        description_embeddings_dir = f'./description_embeddings'
+        description_embeddings_dir = f'./Podcast-Downloader/description_embeddings'
         if not os.path.exists(description_embeddings_dir):
             os.mkdir(description_embeddings_dir)  
         
@@ -107,7 +123,8 @@ class Podcast:
 
         # Sorting de description_embeddings
         sorted_description_embeddings = sorted(description_embeddings, 
-                                               key=lambda x: self.cosine_similarity(x['embedding'], search_embedding))
+                                               key=lambda x: self.cosine_similarity(x['embedding'], search_embedding), 
+                                               reverse=True)
         
         # Obtener los títulos de todos los podcasts
         items_titles = [podcast.find('title').text for podcast in items]
