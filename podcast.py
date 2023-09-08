@@ -56,7 +56,6 @@ class Podcast:
         description_embeddings = self.get_description_embeddings()['description_embeddings']
         # Obtener los episodios del podcast
         items = self.get_items()
-
         i = 0
         for item in items:
             title = item.find('title').text
