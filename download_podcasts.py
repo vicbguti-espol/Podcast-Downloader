@@ -28,29 +28,39 @@ def simplify_title(title):
     file_name = re.sub(r'[%/&!@#\*\$\?\+\^\\.\\\\]', '', title)[:100].replace(' ', '-')
     return file_name
 
-def save_download_metadata(metadata, file_path='./download_metadata.json'):
-    with open(file_path,'w') as f:
-        json.dump(metadata, f)
+# def save_download_metadata(metadata, file_path='./download_metadata.json'):
+#     with open(file_path,'w') as f:
+#         json.dump(metadata, f)
+
+def get_podcast_list(raw_podcast_list):
+    podcast_list = []
+
+    for raw_podcast in raw_podcast_list:
+        podcast_list += [Podcast(raw_podcast['name'], raw_podcast['rss_feed_url'])]
+    
+    return podcast_list
+
+def load_json(file_path):
+    with open(file_path) as json_file:
+        dictionary = json.load(json_file)
+    return dictionary
 
 
 if __name__ == '__main__':
     print("\n--- Downloading podcasts... ---\n")
-    podcast_list = [Podcast('psi-mammoliti', 'https://anchor.fm/s/28fef6f0/podcast/rss')]
+    raw_podcast_list = load_json('./podcast_list.json')['podcast_list']
+    podcast_list = get_podcast_list(raw_podcast_list)
     
     search = 'Me sentí demasiado cansado, quisiera que no me vuelva a pasar'
     download_metadata = {}
     for podcast in podcast_list:
         podcast_items = podcast.search_items(search, limit=2)
-        # podcast_items = podcast.get_items()[:5]
         episodes_metadata = get_episodes_metadata(podcast_items)
-        i = 1 ## 
         for episode in episodes_metadata:
             url, title, release_date, description = episode
             simple_title = simplify_title(title)
             file = get_mp3_file(url)
-            # file_path = f'{podcast.download_directory}/{release_date}.mp3'
             file_path = f'{podcast.download_directory}/{simple_title}.mp3'
-            # file_path = f'{podcast.download_directory}/E{i}.mp3' ## 
             
             if (podcast.name not in download_metadata):
                 download_metadata[podcast.name] = {f'{title}': description}
@@ -59,5 +69,4 @@ if __name__ == '__main__':
             
             save_mp3_file(file, file_path)
             print(file_path, "saved")
-            i += 1
-    save_download_metadata(download_metadata)
+    # save_download_metadata(download_metadata)

@@ -3,6 +3,7 @@ import json
 import time
 import requests
 from podcast import Podcast
+import sys
 
 from dotenv import load_dotenv, find_dotenv
 
@@ -59,27 +60,14 @@ def save_transcription_metadata(metadata, file_path='./transcripts/metadata.json
 	with open(file_path,'w') as f:
 		json.dump(metadata, f)
 
-def load_transcription_metadata(file_path='./transcripts/metadata.json'):
+def load_json(file_path):
 	with open(file_path) as json_file:
-		metadata = json.load(json_file)
-
-	return metadata
-
-# def save_transcriptions_locally(podcast_list):
-# 	metadata = load_transcription_metadata()
-# 	for podcast in podcast_list:
-# 		podcast_transcriptions = metadata[podcast.name]
-# 		for episode, transcription_id in podcast_transcriptions.items():
-# 			episode_name = os.path.splitext(episode)[0]
-# 			output_path = f'{podcast.transcription_directory}/{episode_name}.txt'
-# 			print('Trying to save', output_path)
-# 			transcription = wait_and_get_assembly_ai_transcript(transcription_id)
-# 			with open(output_path, 'w') as f:
-# 				f.write(transcription['text'])
-
+		dictionary = json.load(json_file)
+	return dictionary
 
 def save_transcriptions_locally(podcast_list):
-	metadata = load_transcription_metadata()
+	# Load transcription metadata
+	metadata = load_json('./transcripts/metadata.json')
 	for podcast in podcast_list:
 		podcast_transcriptions = metadata[podcast.name]
 		for episode, transcription_id in podcast_transcriptions.items():
@@ -89,12 +77,6 @@ def save_transcriptions_locally(podcast_list):
 			paragraphs = wait_and_get_assembly_ai_transcript(transcription_id)
 			with open(output_path, 'w') as f:
 				json.dump(paragraphs, f)
-				
-# def get_assembly_ai_transcript(transcription_id):
-# 	headers = {'authorization': os.environ['ASSEMBLY_AI_KEY']}
-# 	endpoint = f'https://api.assemblyai.com/v2/transcript/{transcription_id}'
-# 	response = requests.get(endpoint, headers=headers)
-# 	return response.json()
 
 def get_assembly_ai_transcript(transcription_id):
 	headers = {'authorization': os.environ['ASSEMBLY_AI_KEY']}
@@ -102,22 +84,13 @@ def get_assembly_ai_transcript(transcription_id):
 	response = requests.get(endpoint, headers=headers)
 	return response
 
-# def wait_and_get_assembly_ai_transcript(transcription_id):
-# 	while True:
-# 		response = get_assembly_ai_transcript(transcription_id)
-# 		if response['status'] == 'completed':
-# 			print("Got transcript")
-# 			break
-# 		elif response['status'] == 'error':
-# 			print("Error getting transcript")
-# 			break
-# 		else:
-# 			# print("Transcript not available, trying again in 5 minutes...")
-# 			# time.sleep(300) # Try again in 5 minutes
-# 			print("Transcript not available, trying again in 10 seconds...")
-# 			time.sleep(10) # Try again in 10 seconds
+def get_podcast_list(raw_podcast_list):
+	podcast_list = []
 
-# 	return response
+	for raw_podcast in raw_podcast_list:
+		podcast_list += [Podcast(raw_podcast['name'], raw_podcast['rss_feed_url'])]
+	
+	return podcast_list
 
 def wait_and_get_assembly_ai_transcript(transcription_id):
 	while True:
@@ -137,9 +110,11 @@ def wait_and_get_assembly_ai_transcript(transcription_id):
 
 if __name__ == '__main__':
 	print("\n--- Transcribing podcasts... ---\n")
-	#podcast_list = [Podcast('tim-ferriss', 'https://rss.art19.com/tim-ferriss-show')]
-	# podcast_list = [Podcast('lex-fridman', 'https://lexfridman.com/feed/podcast/')]
-	podcast_list = [Podcast('psi-mammoliti', 'https://anchor.fm/s/28fef6f0/podcast/rss')]
+	# Obtener entradas del usuario
+	# podcast_list = [Podcast('psi-mammoliti', 'https://anchor.fm/s/28fef6f0/podcast/rss')]
+	raw_podcast_list = load_json('./podcast_list.json')['podcast_list']
+	podcast_list = get_podcast_list(raw_podcast_list)
+
 	metadata = create_transcripts(podcast_list, audio_start_from=600000, audio_end_at=900000, language_code="es")
 	print('Uploaded transcripts')
 	save_transcription_metadata(metadata)
